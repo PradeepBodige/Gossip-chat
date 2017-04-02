@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Chat</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<link rel="stylesheet" type="text/css" href="CSS/main.css">
+</head>
+<body class="container">
+<div class="col-md-6">
+<div id="page-content">
+     <div class="chat" >
+     	<input type="text" name="" class="chat-name" placeholder="enter your name">
+     	<div class="chat-messages">
+     		<div class="chat-message"></div>
+     	</div>
+     	<textarea class="chat-textarea" placeholder="Type your message"></textarea>
+     	<div class="chat-status">Status: <span>Idle</span></div>
+     </div>
+     <script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script>
+     <script>
+     	(function() {
+     		var getNode = function(s){
+     			return document.querySelector(s);
+     		} ,
+// Get required nodes
+		 status = getNode('.chat-status span'),
+         messages= getNode('.chat-messages'),
+         textarea = getNode('.chat-textarea'),
+         chatName = getNode('.chat-name'),
+
+         statusDefualt = status.textContent,
+  
+         setStatus = function(s){
+         	status.textContent = s;
+
+         	if(s !== statusDefualt){
+         		var delay = setTimeout(function(){
+         			setStatus(statusDefualt);
+         			clearInterval(delay);
+         		}, 3000);
+         	}
+         };
+         
+        //try connection
+
+         try {
+         	var socket = io.connect('http://127.0.0.1:8080');
+         } catch(e) {
+         	// set status warn to user
+         	
+         }
+
+         if (socket != undefined) {
+			
+			//listen for output 
+			socket.on('output', function(data){
+				if(data.length){
+					//loop through results
+					for(var x = 0; x < data.length; x = x+1){
+						var message = document.createElement('div');
+						message.setAttribute('class', 'chat-message');
+						message.textContent = data[x].name + ':' + data[x].message;
+						// Append 
+						messages.appendChild(message);
+						messages.insertBefore(message, messages.lastChild); 
+
+						messages.scrollTop = messages.scrollHeight;
+					}
+				}
+			});
+
+         	
+         	// listen for status
+
+         	socket.on('status', function(data){
+               setStatus((typeof data === 'object')? data.message:data);
+               if(data.clear === true){
+               	textarea.value = '';
+               } 
+         	});
+
+         	// listen for keydown
+
+         	textarea.addEventListener('keydown', function(event){
+         		var self = this,
+         		    name = chatName.value;
+         		
+         		
+         		if(event.which == 13 && !event.shiftkey) {
+
+                     socket.emit('input',{
+                     	name: name,
+                     	message: self.value
+                     });
+                     event.preventDefault();
+         		}
+
+
+         	});
+         }
+     	})();
+     </script>
+     </div>
+     </div>
+</body>
+
+</html>
+
